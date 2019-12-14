@@ -6,7 +6,7 @@ public class ParkingTracker extends Agent {
     private static double XP;
     private static double YP;
     private static int CAPACITY;
-    private double freeSpaces;
+    private int freeSpaces;
 
     @Override
     protected void setup(){
@@ -14,7 +14,7 @@ public class ParkingTracker extends Agent {
         XP = generator.nextDouble()*100;
         YP = generator.nextDouble()*100;
         CAPACITY = generator.nextInt(200);
-        freeSpaces = 0.3 * generator.nextInt(CAPACITY);
+        freeSpaces = (int) 0.3 * generator.nextInt(CAPACITY);
         System.out.println("Agent: "+getLocalName()+ " is ready for work!");
     }
 
@@ -25,8 +25,8 @@ public class ParkingTracker extends Agent {
         return true;
     }
 
-    public static double[] getLocalization() {
-        double[] coordinates = {XP, YP};
+    public static int[] getLocalization() {
+        int[] coordinates = {XP, YP};
         return coordinates;
     }
 
