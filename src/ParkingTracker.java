@@ -25,8 +25,8 @@ public class ParkingTracker extends Agent {
         return true;
     }
 
-    public static int[] getLocalization() {
-        int[] coordinates = {XP, YP};
+    public static double[] getLocalization() {
+        double[] coordinates = {XP, YP};
         return coordinates;
     }
 
