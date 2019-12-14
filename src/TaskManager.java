@@ -1,11 +1,16 @@
 import jade.core.Agent;
 
 import java.lang.Math;
+import java.util.ArrayList;
+import java.util.List;
+
 import jade.core.AID;
 
 import jade.domain.AMSService;
+import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.*;
 import jade.core.behaviours.*;
+import jade.domain.FIPAException;
 import jade.lang.acl.*;
 
 class Parking{
@@ -13,7 +18,7 @@ class Parking{
     private int x;
     private int y;
 
-    public String getName() {
+    public AID getName() {
         return name;
     }
 
@@ -25,7 +30,7 @@ class Parking{
         return y;
     }
 
-    public Parking(String name, int x, int y) {
+    public Parking(AID name, int x, int y) {
         this.name = name;
         this.x = x;
         this.y = y;
@@ -34,10 +39,8 @@ class Parking{
 
 
 class GetParkingsBehaviour extends OneShotBehaviour{
+    @Override
     public void action(){
-
-    }
-    public boolean done(){
 
     }
 }
@@ -46,11 +49,11 @@ public class TaskManager extends Agent {
     List<Parking> parkings = new ArrayList<Parking>();
 
     private double calcDist (int xp, int yp, int xu, int yu){
-        return Math.sqr((xp-xu)*(xp-xu)+(yp-yu)*(yp-yu));
+        return Math.sqrt((xp-xu)*(xp-xu)+(yp-yu)*(yp-yu));
     }
 
-    private double[] getDistAll (int ){
-
+    private double[] getDistAll (int x){
+        return new double[] {45.45};
     }
 
     @Override
@@ -72,9 +75,9 @@ public class TaskManager extends Agent {
         }
 
         DFAgentDescription template = new DFAgentDescription();
-        ServiceDescription sd = new ServiceDescription();
-        sd.setType("GetCordsType");
-        template.addServices(sd);
+        ServiceDescription sd1 = new ServiceDescription();
+        sd1.setType("GetCordsType");
+        template.addServices(sd1);
         try {
             DFAgentDescription[] result = DFService.search(this, template);
             for (DFAgentDescription parking:result){
