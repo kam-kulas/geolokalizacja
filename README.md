@@ -1,2 +1,0 @@
-# TASS
-### Geolokalizacja
