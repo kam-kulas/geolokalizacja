@@ -1,7 +1,5 @@
-import Tools.MySerializable;
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.MessageQueue;
 import jade.core.behaviours.Behaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -11,13 +9,13 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import messageTemplate.FindFreeSlotsContent;
 
-import java.awt.*;
 import java.io.IOException;
-import java.io.Serializable;
+import java.util.Date;
 
 public class UserTracker extends Agent {
 
     private boolean IsProcessing_GetParking = false;
+    String conversationId = null;
     private int PositionX;
     private int PositionY;
 
@@ -43,6 +41,7 @@ public class UserTracker extends Agent {
         sd.setName("FindFreeSlots");
         template.addServices(sd);
         try{
+            Thread.sleep(3000);
             DFAgentDescription[] result = DFService.search(this, template);
             AID nameReciver = result[0].getName();
             ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
@@ -50,9 +49,15 @@ public class UserTracker extends Agent {
             msg.setLanguage("Polish");
             FindFreeSlotsContent content = new FindFreeSlotsContent(PositionX, PositionY);
             msg.setContentObject(content);
+            long currentTime = new Date().getTime();
+            conversationId = getLocalName() + currentTime;
+            msg.setConversationId(conversationId);
             send(msg);
         }
         catch (FIPAException ex){
+            ex.printStackTrace();
+        }
+        catch (InterruptedException ex){
             ex.printStackTrace();
         }
         catch (IOException ex){
@@ -68,7 +73,7 @@ public class UserTracker extends Agent {
         public void action() {
             MessageTemplate mt = MessageTemplate.and(
                     MessageTemplate.MatchPerformative(ACLMessage.INFORM),
-                    MessageTemplate.MatchConversationId("fadsf")
+                    MessageTemplate.MatchConversationId(conversationId)
             );
 
             ACLMessage msg = myAgent.receive();

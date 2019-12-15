@@ -46,7 +46,7 @@ class GetParkingsBehaviour extends OneShotBehaviour{
 }
 
 public class TaskManager extends Agent {
-    List<Parking> parkings = new ArrayList<Parking>();
+    List<Parking> parkings = new ArrayList<>();
 
     private double calcDist (int xp, int yp, int xu, int yu){
         return Math.sqrt((xp-xu)*(xp-xu)+(yp-yu)*(yp-yu));
@@ -61,6 +61,7 @@ public class TaskManager extends Agent {
 
         System.out.println("Agent: "+getLocalName());
 
+        // Rejestracja agenta na DFD
         DFAgentDescription dfad = new DFAgentDescription();
         dfad.setName(getAID());
         ServiceDescription sd = new ServiceDescription();

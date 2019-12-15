@@ -1,4 +1,11 @@
 import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.FIPAException;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 
 import java.util.Random;
 
@@ -8,43 +15,37 @@ public class ParkingTracker extends Agent {
     private static int CAPACITY;
     private int freeSpaces;
 
+    private boolean IsGetPositionBehaviorProcessing = false;
+
     @Override
     protected void setup(){
+
+        // Inicjalizacja parametrów parkingu
         Random generator = new Random();
         XP = generator.nextDouble()*100;
         YP = generator.nextDouble()*100;
         CAPACITY = generator.nextInt(200);
         freeSpaces = (int) 0.3 * generator.nextInt(CAPACITY);
+        System.out.println("Agent: "+getLocalName()+ " is ready for work!");
 
-        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 
-        for (int i=0; i<agents.length;i++)
-            msg.addReceiver( agents[i].getName() );
+        //rejestracja parkingu w DFD
+        DFAgentDescription dfd = new DFAgentDescription();
+        dfd.setName(getAID());
+        ServiceDescription sd = new ServiceDescription();
+        sd.setType("Parking");
+        sd.setName(getLocalName());
+        dfd.addServices(sd);
+        try{
+            DFService.register(this, dfd);
+        }catch (FIPAException fe){
+            fe.printStackTrace();
+        }
 
-        msg.setLanguage("Polski");
-        msg.setOntology("Geolokalizacja");
 
-        System.out.println("Agent: "+getLocalName()+ " jest gotowy do pracy!");
-        addBehaviour(new TickerBehaviour(this, 10000){
-            protected void onTick(){
-                if (freeSpaces != 0) {
-                    msg.setContent("" + freeSpaces + " są dostępne na ");
-                }
-                else if (freeSpaces == 0) {
-                    msg.setContent("Miejsca parkingowe nie są dostępne");
-                }
-                send(msg);
-            }
-        })
 
-        addBehaviour(new CyclicBehaviour(this) {
-            public void action() {
-                ACLMessage msg= receive();
-                if (msg!=null)
-                    System.out.println( "== Odpowiedź" + " <- " +  msg.getContent() + " od " +  msg.getSender().getName());
-                block();
-            }
-        });
+
+
     }
 
     public boolean isFreeSpaceAvailable() {
@@ -60,6 +61,31 @@ public class ParkingTracker extends Agent {
     }
 
     protected void takeDown(){
-        System.out.println("Agent: "+getLocalName()+ " skończył pracę.");
+        System.out.println("Agent: "+getLocalName()+ " is done.");
     }
-}
+
+    public class GetPositionBehavior extends Behaviour{
+
+        public void action(){
+            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+
+
+            ACLMessage msg = myAgent.receive();
+            if(msg!=null){
+                IsGetPositionBehaviorProcessing = true;
+
+            }else{
+                block();
+            }
+
+        }
+
+        public boolean done() {
+            if (!IsGetPositionBehaviorProcessing) return true; else return false;
+        }
+
+        }
+
+    }
+
+
