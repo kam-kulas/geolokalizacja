@@ -28,7 +28,7 @@ public class Main {
                 e.printStackTrace();
             }
         }
-        for (int i = 0; i<5; i++){
+        for (int i = 0; i<1 ; i++){
             try{
                 ac = cc.createNewAgent("UserTracker"+i, "UserTracker", null);
                 ac.start();
