@@ -1,3 +1,4 @@
+import Tools.MySerializable;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.MessageQueue;
@@ -8,17 +9,26 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import messageTemplate.FindFreeSlotsContent;
 
 import java.awt.*;
+import java.io.IOException;
+import java.io.Serializable;
 
 public class UserTracker extends Agent {
 
     private boolean IsProcessing_GetParking = false;
+    private int PositionX;
+    private int PositionY;
 
     @Override
     protected void setup(){
         System.out.println("Agent: "+getLocalName());
         addBehaviour(new ReciveParkingsBehaviour());
+        PositionX = 2;
+        PositionY = 4;
+
+
         startGetParkings();
     }
 
@@ -34,16 +44,23 @@ public class UserTracker extends Agent {
         template.addServices(sd);
         try{
             DFAgentDescription[] result = DFService.search(this, template);
-            AID a = result[0].getName();
-            System.out.println(a);
+            AID nameReciver = result[0].getName();
+            ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+            msg.addReceiver(nameReciver);
+            msg.setLanguage("Polish");
+            FindFreeSlotsContent content = new FindFreeSlotsContent(PositionX, PositionY);
+            msg.setContentObject(content);
+            send(msg);
         }
         catch (FIPAException ex){
-
+            ex.printStackTrace();
         }
-
-
+        catch (IOException ex){
+            ex.printStackTrace();
+        }
         IsProcessing_GetParking = true;
-        ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+
+
     }
 
 
