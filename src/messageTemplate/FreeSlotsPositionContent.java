@@ -7,14 +7,14 @@ public class FreeSlotsPositionContent implements Serializable{
 
     public FreeSlotsPositionContent(int XP, int YP){
         this.XP = XP;
-        this.XY = XY;
+        this.YP = YP;
     }
 
     public int getXP() {
         return XP;
     }
     public int getXY() {
-        return XY;
+        return YP;
     }
 
 }

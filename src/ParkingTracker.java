@@ -7,12 +7,14 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import messageTemplate.FreeSlotsPositionContent;
 
+import java.io.IOException;
 import java.util.Random;
 
 public class ParkingTracker extends Agent {
-    private static double XP;
-    private static double YP;
+    private static int XP;
+    private static int YP;
     private static int CAPACITY;
     private int freeSpaces;
 
@@ -23,8 +25,8 @@ public class ParkingTracker extends Agent {
 
         // Inicjalizacja parametrów parkingu
         Random generator = new Random();
-        XP = generator.nextDouble()*100;
-        YP = generator.nextDouble()*100;
+        XP = generator.nextInt()*100;
+        YP = generator.nextInt()*100;
         CAPACITY = generator.nextInt(200);
         freeSpaces = (int) 0.3 * generator.nextInt(CAPACITY);
         System.out.println("Agent: "+getLocalName()+ " is ready for work!");
@@ -43,6 +45,7 @@ public class ParkingTracker extends Agent {
             fe.printStackTrace();
         }
 
+        // Zachowania
         addBehaviour(new CyclicBehaviour(this)
         {
             public void action() {
@@ -54,7 +57,7 @@ public class ParkingTracker extends Agent {
                 block();
             }
         });
-
+        addBehaviour(new GetPositionBehavior());
 
 
     }
@@ -75,16 +78,28 @@ public class ParkingTracker extends Agent {
         System.out.println("Agent: "+getLocalName()+ " is done.");
     }
 
+
+
     public class GetPositionBehavior extends Behaviour{
 
         public void action(){
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
-
-
-            ACLMessage msg = myAgent.receive();
+            MessageTemplate mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.REQUEST),
+                    MessageTemplate.MatchContent("Podaj pozycje")
+            );
+            ACLMessage msg = myAgent.receive(mt);
             if(msg!=null){
                 IsGetPositionBehaviorProcessing = true;
-
+                try{
+                    ACLMessage answerMsg = new ACLMessage(ACLMessage.REQUEST);
+                    answerMsg.addReceiver(msg.getSender());
+                    answerMsg.setLanguage("Polish");
+                    answerMsg.setContent("Oto moja pozycja");
+                    answerMsg.setContentObject(new FreeSlotsPositionContent(XP, YP));
+                    send(answerMsg);
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
             }else{
                 block();
             }

@@ -27,19 +27,12 @@ public class UserTracker extends Agent {
         PositionX = 2;
         PositionY = 4;
 
-        addBehaviour(new CyclicBehaviour(this)
-        {
-            public void action() {
-                ACLMessage msg= receive();
-                if (msg!=null)
-                    System.out.println( "== Answer" + " <- "
-                            +  msg.getContent() + " from "
-                            +  msg.getSender().getName() );
-                block();
-            }
-        });
 
-        startGetParkings();
+        // Zachowania
+
+        addBehaviour(new GetParkings());
+
+
     }
 
     @Override
@@ -47,38 +40,58 @@ public class UserTracker extends Agent {
         doDelete();
     }
 
-    private void startGetParkings(){
-        DFAgentDescription template  = new DFAgentDescription();
-        ServiceDescription sd = new ServiceDescription();
-        sd.setName("TaskManager");
-        template.addServices(sd);
-        try{
-            Thread.sleep(3000);
-            DFAgentDescription[] result = DFService.search(this, template);
-            AID nameReciver = result[0].getName();
-            ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-            msg.addReceiver(nameReciver);
-            msg.setLanguage("Polish");
-            FindFreeSlotsContent content = new FindFreeSlotsContent(PositionX, PositionY);
-            msg.setContentObject(content);
-            long currentTime = new Date().getTime();
-            conversationId = getLocalName() + currentTime;
-            msg.setConversationId(conversationId);
-            send(msg);
-        }
-        catch (FIPAException ex){
-            ex.printStackTrace();
-        }
-        catch (InterruptedException ex){
-            ex.printStackTrace();
-        }
-        catch (IOException ex){
-            ex.printStackTrace();
-        }
-        IsProcessing_GetParking = true;
+    public class GetParkings extends Behaviour{
+
+        public void action(){
+            MessageTemplate mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.REQUEST),
+                    MessageTemplate.MatchContent("Start")
+            );
+            ACLMessage msg = myAgent.receive(mt);
+            if(msg!=null){
+                System.out.println("Odebrał");
+                DFAgentDescription template  = new DFAgentDescription();
+                ServiceDescription sd = new ServiceDescription();
+                sd.setName("TaskManager");
+                template.addServices(sd);
+                try{
+                    Thread.sleep(3000);
+                    DFAgentDescription[] result = DFService.search(myAgent, template);
+                    AID nameReciver = result[0].getName();
+                    ACLMessage requestMsg = new ACLMessage(ACLMessage.REQUEST);
+                    requestMsg.addReceiver(nameReciver);
+                    requestMsg.setLanguage("Polish");
+                    FindFreeSlotsContent content = new FindFreeSlotsContent(PositionX, PositionY);
+                    requestMsg.setContentObject(content);
+                    long currentTime = new Date().getTime();
+                    conversationId = getLocalName() + currentTime;
+                    requestMsg.setConversationId(conversationId);
+                    send(requestMsg);
+                }
+                catch (FIPAException ex){
+                    ex.printStackTrace();
+                }
+                catch (InterruptedException ex){
+                    ex.printStackTrace();
+                }
+                catch (IOException ex){
+                    ex.printStackTrace();
+                }
+                IsProcessing_GetParking = true;
+
+            }
+            else{
+                block();
+            }
 
 
+        }
+
+        public boolean done() {
+           return false;
+        }
     }
+
 
 
     public class ReciveParkingsBehaviour extends Behaviour {
@@ -95,10 +108,6 @@ public class UserTracker extends Agent {
             }else{
                 block();
             }
-
-
-
-
 
         }
         public boolean done() {
