@@ -7,7 +7,6 @@ public class UserSession {
         this.conversationId = conversationId;
 
         requestAboutFreeSpaces = 0;
-        IsDoneAnswerNearlyParkings = false;
         IsDoneCheckFreeSpaces = false;
     }
 
@@ -18,7 +17,6 @@ public class UserSession {
 
 
     //steps
-    public boolean IsDoneAnswerNearlyParkings;
     public boolean IsDoneCheckFreeSpaces;
 
     public void setRequestAboutFreeSpaces(int requestAboutFreeSpaces) {

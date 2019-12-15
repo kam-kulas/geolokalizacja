@@ -3,6 +3,7 @@ import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.Envelope;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
@@ -84,6 +85,7 @@ public class ParkingTracker extends Agent {
                     ParkingPositionContent parkingPositionContent =
                             new ParkingPositionContent(XP, YP);
                     answerMsg.setContentObject((Serializable) parkingPositionContent);
+                    answerMsg.setEncoding("ParkingPositionContent");
                     send(answerMsg);
                     logger.LogSendMessage(answerMsg, myAgent);
                 }catch (IOException e){
@@ -112,6 +114,7 @@ public class ParkingTracker extends Agent {
                 ACLMessage answerMsg = msg.createReply();
                 answerMsg.setPerformative(ACLMessage.INFORM);
                 answerMsg.setLanguage("Polish");
+                answerMsg.setEncoding("FreeSpaces");
                 answerMsg.setContent(String.valueOf(freeSpaces));
                 send(answerMsg);
                 logger.LogSendMessage(answerMsg, myAgent);

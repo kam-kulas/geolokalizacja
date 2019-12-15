@@ -25,8 +25,8 @@ public class UserTracker extends Agent {
         System.out.println("Agent: "+getLocalName());
         logger = new Logger();
 
-        PositionX = 2;
-        PositionY = 4;
+        PositionX = 40;
+        PositionY = 50;
 
 
         // Zachowania

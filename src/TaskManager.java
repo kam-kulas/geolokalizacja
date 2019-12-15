@@ -21,6 +21,8 @@ import jade.lang.acl.ACLMessage;
 import MessageTemplate.FindFreeSlotsContent;
 import MessageTemplate.ParkingPositionContent;
 import MessageTemplate.ParkingsToChooseByUserContent;
+import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -55,7 +57,7 @@ public class TaskManager extends Agent {
         }
 
         //Zachownania
-        addBehaviour(new ReciveParkingPositionBehaviour());
+        addBehaviour(new ReciveParkingInformationBehaviour());
         addBehaviour(new GetParkingsPositionBehaviour());
         addBehaviour(new AnswerNearlyParkings());
 
@@ -93,25 +95,30 @@ public class TaskManager extends Agent {
     }
 
 
-    private class ReciveParkingPositionBehaviour extends Behaviour{
+    private class ReciveParkingInformationBehaviour extends Behaviour{
 
         public void action(){
             MessageTemplate mt =
                     MessageTemplate.MatchPerformative(ACLMessage.INFORM);
             ACLMessage msg = myAgent.receive(mt);
             if(msg!=null){
-                Logger.LogReciveMessage(msg, myAgent);
-                try{
-                    Serializable data = msg.getContentObject();
-                    ParkingPositionContent parkingPositionContent
-                            = (ParkingPositionContent) data;
-                    Parking parking = new Parking(msg.getSender(),
-                            parkingPositionContent.getXP(),
-                            parkingPositionContent.getYP());
-                    parkings.add(parking);
+                if(msg.getEncoding() == "ParkingPositionContent"){
+                    Logger.LogReciveMessage(msg, myAgent);
+                    try{
+                        Serializable data = msg.getContentObject();
+                        ParkingPositionContent parkingPositionContent
+                                = (ParkingPositionContent) data;
+                        Parking parking = new Parking(msg.getSender(),
+                                parkingPositionContent.getXP(),
+                                parkingPositionContent.getYP());
+                        parkings.add(parking);
+                    }
+                    catch (UnreadableException e){
+                        e.printStackTrace();
+                    }
                 }
-                catch (UnreadableException e){
-                    e.printStackTrace();
+                if (msg.getEncoding() == "FreeSpaces"){
+
                 }
             }
             else{
@@ -161,8 +168,6 @@ public class TaskManager extends Agent {
                         }
                         send(requestAboutFreeSpace);
                         logger.LogSendMessage(requestAboutFreeSpace, myAgent);
-                        userSessions.get(msgFromUser.getConversationId())
-                                .IsDoneAnswerNearlyParkings = true;
                         return;
                     }
 
@@ -179,10 +184,6 @@ public class TaskManager extends Agent {
                             answerMsg.setContentObject(parkingsToChooseByUser);
                             send(answerMsg);
                             logger.LogSendMessage(answerMsg, myAgent);
-                            userSessions.get(msgFromUser.getConversationId())
-                                    .IsDoneAnswerNearlyParkings = true;
-                            userSessions.get(msgFromUser.getConversationId())
-                                    .IsDoneCheckFreeSpaces = true;
                         }catch (IOException ioe){
                             ioe.printStackTrace();
                         }
@@ -210,9 +211,7 @@ public class TaskManager extends Agent {
 
         @Override
         public boolean done() {
-            if (msgFromUser == null)
                 return false;
-            return userSessions.get(msgFromUser.getConversationId()).IsDoneAnswerNearlyParkings;
         }
     }
 
@@ -220,14 +219,10 @@ public class TaskManager extends Agent {
     private double calcDist (int xp, int yp, int xu, int yu){
         return Math.sqrt((xp-xu)*(xp-xu)+(yp-yu)*(yp-yu));
     }
-    private double[] getDistAll (int x){
-        return new double[] {45.45};
-    }
-
-
 
     private List<Parking> getNearlyParkingsToCheckFreeSpace(int carX, int carY){
-        int radius = 20;
+        int radius = 40;
+        List<Parking> nearlyParkings = new ArrayList<>();
         if (parkings == null) {
             return nearlyParkings;
         }
@@ -242,6 +237,7 @@ public class TaskManager extends Agent {
     }
 
     private List<Parking> getNearlyParkingsToChooseByUser(int carX, int carY){
+        List<Parking> nearlyParkingsAvailable = new ArrayList<>();
         nearlyParkingsAvailable = getNearlyParkingsToCheckFreeSpace(carX, carY);
         for (int i = 0; i < nearlyParkingsAvailable.size(); i++) {
             if (nearlyParkingsAvailable.get(i).getFreeSpace() == 0) {

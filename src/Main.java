@@ -23,8 +23,8 @@ public class Main {
         for (int i = 0; i<10; i++){
             try{
                 Object[] object = new Object[] {
-                        generator.nextInt()*100,
-                        generator.nextInt()*100,
+                        generator.nextInt(100),
+                        generator.nextInt(100),
                         generator.nextInt(200),
                         generator.nextInt(100)
                 };
