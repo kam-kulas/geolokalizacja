@@ -2,8 +2,8 @@ package messageTemplate;
 import java.io.Serializable;
 
 public class FreeSlotsPositionContent implements Serializable{
-    private static int XP;
-    private static int YP;
+    private int XP;
+    private int YP;
 
     public FreeSlotsPositionContent(int XP, int YP){
         this.XP = XP;
@@ -13,7 +13,7 @@ public class FreeSlotsPositionContent implements Serializable{
     public int getXP() {
         return XP;
     }
-    public int getXY() {
+    public int getYP() {
         return YP;
     }
 

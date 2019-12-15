@@ -1,3 +1,4 @@
+import Tools.Logger;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
@@ -15,15 +16,16 @@ import java.util.Date;
 
 public class UserTracker extends Agent {
 
-    private boolean IsProcessing_GetParking = false;
     String conversationId = null;
+    private Logger logger;
     private int PositionX;
     private int PositionY;
 
     @Override
     protected void setup(){
         System.out.println("Agent: "+getLocalName());
-        addBehaviour(new ReciveParkingsBehaviour());
+        logger = new Logger();
+
         PositionX = 2;
         PositionY = 4;
 
@@ -31,6 +33,7 @@ public class UserTracker extends Agent {
         // Zachowania
 
         addBehaviour(new GetParkings());
+        addBehaviour(new ReciveParkingsBehaviour());
 
 
     }
@@ -49,7 +52,7 @@ public class UserTracker extends Agent {
             );
             ACLMessage msg = myAgent.receive(mt);
             if(msg!=null){
-                System.out.println("Odebrał");
+                logger.LogReciveMessage(msg, myAgent);
                 DFAgentDescription template  = new DFAgentDescription();
                 ServiceDescription sd = new ServiceDescription();
                 sd.setName("TaskManager");
@@ -67,6 +70,7 @@ public class UserTracker extends Agent {
                     conversationId = getLocalName() + currentTime;
                     requestMsg.setConversationId(conversationId);
                     send(requestMsg);
+                    logger.LogSendMessage(requestMsg, myAgent);
                 }
                 catch (FIPAException ex){
                     ex.printStackTrace();
@@ -77,14 +81,10 @@ public class UserTracker extends Agent {
                 catch (IOException ex){
                     ex.printStackTrace();
                 }
-                IsProcessing_GetParking = true;
-
             }
             else{
                 block();
             }
-
-
         }
 
         public boolean done() {
@@ -101,17 +101,16 @@ public class UserTracker extends Agent {
                     MessageTemplate.MatchConversationId(conversationId)
             );
 
-            ACLMessage msg = myAgent.receive();
+            ACLMessage msg = myAgent.receive(mt);
             if(msg!=null){
-                IsProcessing_GetParking = true;
-
+                logger.LogReciveMessage(msg, myAgent);
             }else{
                 block();
             }
 
         }
         public boolean done() {
-            if (!IsProcessing_GetParking) return true; else return false;
+            return false;
         }
     }
 }

@@ -1,6 +1,6 @@
+import Tools.Logger;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
-import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -10,25 +10,27 @@ import jade.lang.acl.MessageTemplate;
 import messageTemplate.FreeSlotsPositionContent;
 
 import java.io.IOException;
-import java.util.Random;
+import java.io.Serializable;
 
 public class ParkingTracker extends Agent {
-    private static int XP;
-    private static int YP;
-    private static int CAPACITY;
+
+    private Logger logger;
+    private int XP;
+    private int YP;
+    private int CAPACITY;
     private int freeSpaces;
 
-    private boolean IsGetPositionBehaviorProcessing = false;
 
     @Override
     protected void setup(){
 
+        logger = new Logger();
         // Inicjalizacja parametrów parkingu
-        Random generator = new Random();
-        XP = generator.nextInt()*100;
-        YP = generator.nextInt()*100;
-        CAPACITY = generator.nextInt(200);
-        freeSpaces = (int) 0.3 * generator.nextInt(CAPACITY);
+        Object[] objects = getArguments();
+        XP = (int)objects[0];
+        YP = (int)objects[1];
+        CAPACITY = (int)objects[2];
+        freeSpaces = CAPACITY * (int)objects[3];
         System.out.println("Agent: "+getLocalName()+ " is ready for work!");
 
 
@@ -46,18 +48,7 @@ public class ParkingTracker extends Agent {
         }
 
         // Zachowania
-        addBehaviour(new CyclicBehaviour(this)
-        {
-            public void action() {
-                ACLMessage msg= receive();
-                if (msg!=null)
-                    System.out.println( "== Answer" + " <- "
-                            +  msg.getContent() + " from "
-                            +  msg.getSender().getName() );
-                block();
-            }
-        });
-        addBehaviour(new GetPositionBehavior());
+        addBehaviour(new AnswerPositionBehavior());
 
 
     }
@@ -69,18 +60,13 @@ public class ParkingTracker extends Agent {
         return true;
     }
 
-    public static double[] getLocalization() {
-        double[] coordinates = {XP, YP};
-        return coordinates;
-    }
-
     protected void takeDown(){
         System.out.println("Agent: "+getLocalName()+ " is done.");
     }
 
 
 
-    public class GetPositionBehavior extends Behaviour{
+    public class AnswerPositionBehavior extends Behaviour{
 
         public void action(){
             MessageTemplate mt = MessageTemplate.and(
@@ -89,27 +75,27 @@ public class ParkingTracker extends Agent {
             );
             ACLMessage msg = myAgent.receive(mt);
             if(msg!=null){
-                IsGetPositionBehaviorProcessing = true;
+                logger.LogReciveMessage(msg, myAgent);
                 try{
-                    ACLMessage answerMsg = new ACLMessage(ACLMessage.REQUEST);
-                    answerMsg.addReceiver(msg.getSender());
+                    ACLMessage answerMsg = msg.createReply();
+                    answerMsg.setPerformative(ACLMessage.INFORM);
                     answerMsg.setLanguage("Polish");
-                    answerMsg.setContent("Oto moja pozycja");
-                    answerMsg.setContentObject(new FreeSlotsPositionContent(XP, YP));
+                    FreeSlotsPositionContent freeSlotsPositionContent =
+                            new FreeSlotsPositionContent(XP, YP);
+                    answerMsg.setContentObject((Serializable)freeSlotsPositionContent);
                     send(answerMsg);
+                    logger.LogSendMessage(answerMsg, myAgent);
                 }catch (IOException e){
                     e.printStackTrace();
                 }
             }else{
                 block();
             }
-
         }
 
         public boolean done() {
-            if (!IsGetPositionBehaviorProcessing) return true; else return false;
+            return false;
         }
-
         }
 
     }
