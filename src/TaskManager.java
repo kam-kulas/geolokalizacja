@@ -1,30 +1,31 @@
 import Models.Parking;
 import Tools.Logger;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
-import jade.core.Agent;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.lang.Math;
-import java.util.ArrayList;
-import java.util.List;
-
 import jade.core.AID;
-
+import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.domain.DFService;
-import jade.domain.FIPAAgentManagement.*;
-import jade.core.behaviours.*;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
-import jade.lang.acl.*;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 import messageTemplate.FindFreeSlotsContent;
 import messageTemplate.FreeSlotsPositionContent;
 import messageTemplate.ParkingsToChooseByUserContent;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TaskManager extends Agent {
 
     private Logger logger;
     List<Parking> parkings = new ArrayList<>();
+    List<Parking> nearlyParkings = new ArrayList<>();
+    List<Parking> nearlyParkingsAvailable = new ArrayList<>();
 
     @Override
     protected void setup(){
@@ -184,28 +185,29 @@ public class TaskManager extends Agent {
         return new double[] {45.45};
     }
 
-
-
     private List<Parking> getNearlyParkingsToCheckFreeSpace(int carX, int carY){
-        //TODO Michal możesz to zaimplementować (trzeba sprawdzić
-        // czy zmienna nie jest pusta
-        // jezeli nie jest pusta to na podstawie współrzenych samochodu
-        // i współrzednych parkingu znajdź najbliższe bez uwzględniania miejsca)
-        // jeżeli nie znalazłeś żadnych parkingów w pobliżu zwracasz pustą tablice
-        // jeżeli nic nie ma być aktualizowane zwracasz pustą tablicę
-
-        return new ArrayList<>();
+        int radius = 20;
+        if (parkings == null) {
+            return nearlyParkings;
+        }
+            for (Parking parking : parkings) {
+                int xp = parking.getX();
+                int yp = parking.getY();
+                if (calcDist(xp, yp, carX, carY) <= radius) {
+                    nearlyParkings.add(parking);
+                }
+            }
+        return nearlyParkings;
     }
 
     private List<Parking> getNearlyParkingsToChooseByUser(int carX, int carY){
-        //TODO Michal możesz to zaimplementować (trzeba sprawdzić
-        // czy zmienna nie jest pusta
-        // jezeli nie jest pusta to na podstawie współrzenych samochodu
-        // i współrzednych parkingu znajdź najbliższe uwzględniając czy jest miejsce)
-        // jeżeli nie znalazłeś żadnych parkingów w pobliżu zwracasz pustą tablice
-
-        return new ArrayList<>();
+        nearlyParkingsAvailable = getNearlyParkingsToCheckFreeSpace(carX, carY);
+        for (int i = 0; i < nearlyParkingsAvailable.size(); i++) {
+            if (nearlyParkingsAvailable.get(i).getFreeSpace() == 0) {
+                nearlyParkingsAvailable.remove(i);
+            }
+        }
+        return nearlyParkingsAvailable;
     }
-
 
 }
