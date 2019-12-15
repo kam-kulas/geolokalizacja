@@ -43,6 +43,7 @@ public class UserTracker extends Agent {
         doDelete();
     }
 
+
     public class GetParkings extends Behaviour{
 
         public void action(){
@@ -58,7 +59,6 @@ public class UserTracker extends Agent {
                 sd.setName("TaskManager");
                 template.addServices(sd);
                 try{
-                    Thread.sleep(3000);
                     DFAgentDescription[] result = DFService.search(myAgent, template);
                     AID nameReciver = result[0].getName();
                     ACLMessage requestMsg = new ACLMessage(ACLMessage.REQUEST);
@@ -73,9 +73,6 @@ public class UserTracker extends Agent {
                     logger.LogSendMessage(requestMsg, myAgent);
                 }
                 catch (FIPAException ex){
-                    ex.printStackTrace();
-                }
-                catch (InterruptedException ex){
                     ex.printStackTrace();
                 }
                 catch (IOException ex){

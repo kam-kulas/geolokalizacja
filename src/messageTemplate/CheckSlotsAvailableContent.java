@@ -1,10 +1,10 @@
 package messageTemplate;
 import java.io.Serializable;
 
-public class CheckSlotsAvailable implements Serializable{
+public class CheckSlotsAvailableContent implements Serializable{
     private boolean isAvailable;
 
-    public CheckSlotsAvailable(boolean isAvailable){
+    public CheckSlotsAvailableContent(boolean isAvailable){
         this.isAvailable = isAvailable;
     }
 

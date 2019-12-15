@@ -1,13 +1,12 @@
+import Models.Parking;
 import Tools.Logger;
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import jade.core.Agent;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.Math;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 import jade.core.AID;
@@ -17,45 +16,15 @@ import jade.domain.FIPAAgentManagement.*;
 import jade.core.behaviours.*;
 import jade.domain.FIPAException;
 import jade.lang.acl.*;
+import messageTemplate.FindFreeSlotsContent;
 import messageTemplate.FreeSlotsPositionContent;
-import sun.rmi.runtime.Log;
-
-class Parking{
-    private AID name;
-    private int x;
-    private int y;
-
-    public AID getName() {
-        return name;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public Parking(AID name, int x, int y) {
-        this.name = name;
-        this.x = x;
-        this.y = y;
-    }
-}
+import messageTemplate.ParkingsToChooseByUserContent;
 
 
 public class TaskManager extends Agent {
 
     private Logger logger;
     List<Parking> parkings = new ArrayList<>();
-    private double calcDist (int xp, int yp, int xu, int yu){
-        return Math.sqrt((xp-xu)*(xp-xu)+(yp-yu)*(yp-yu));
-    }
-    private double[] getDistAll (int x){
-        return new double[] {45.45};
-    }
-
 
     @Override
     protected void setup(){
@@ -80,7 +49,7 @@ public class TaskManager extends Agent {
         //Zachownania
         addBehaviour(new ReciveParkingPositionBehaviour());
         addBehaviour(new GetParkingsPositionBehaviour());
-
+        addBehaviour(new AnswerNearlyParkings());
 
     }
 
@@ -89,7 +58,8 @@ public class TaskManager extends Agent {
         doDelete();
     }
 
-    class GetParkingsPositionBehaviour extends OneShotBehaviour{
+
+    private class GetParkingsPositionBehaviour extends OneShotBehaviour{
         @Override
         public void action(){
             DFAgentDescription template = new DFAgentDescription();
@@ -115,7 +85,7 @@ public class TaskManager extends Agent {
     }
 
 
-    class ReciveParkingPositionBehaviour extends Behaviour{
+    private class ReciveParkingPositionBehaviour extends Behaviour{
 
         public void action(){
             MessageTemplate mt =
@@ -145,5 +115,97 @@ public class TaskManager extends Agent {
             return false;
         }
     }
+
+
+    private class AnswerNearlyParkings extends Behaviour{
+
+        @Override
+        public void action() {
+            MessageTemplate mt =
+                    MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+            ACLMessage msg = myAgent.receive(mt);
+            if(msg!=null){
+                logger.LogReciveMessage(msg, myAgent);
+                try {
+                    Serializable data = msg.getContentObject();
+                    FindFreeSlotsContent findFreeSlotsContent
+                            = (FindFreeSlotsContent) data;
+                    int carX = findFreeSlotsContent.getPositionX();
+                    int carY = findFreeSlotsContent.getPositionY();
+
+                    List<Parking> nearlyParkingsToCheckFreeSpace = getNearlyParkingsToCheckFreeSpace(carX, carY);
+                    // Sprawdź zajętość miejsc
+                    if(!nearlyParkingsToCheckFreeSpace.isEmpty()){
+
+
+                        return;
+                    }
+                    // Wszystkie dane są aktualne więc daj miejsca do wyboru
+                    List<Parking> nearlyParkingsToChooseByUser = getNearlyParkingsToChooseByUser(carX, carY);
+                    if (!nearlyParkingsToChooseByUser.isEmpty()){
+                        ParkingsToChooseByUserContent parkingsToChooseByUser =
+                                new ParkingsToChooseByUserContent(nearlyParkingsToChooseByUser);
+                        try{
+                            ACLMessage answerMsg = msg.createReply();
+                            answerMsg.setPerformative(ACLMessage.INFORM);
+                            answerMsg.setLanguage("Polish");
+                            answerMsg.setContentObject(parkingsToChooseByUser);
+                        }catch (IOException ioe){
+                            ioe.printStackTrace();
+                        }
+
+                    }
+
+                    // Nie znaleziono żadnych pustych miejsc w pobliżu
+                    else{
+
+                    }
+                }
+                catch (UnreadableException ue){
+                    ue.printStackTrace();
+                }
+
+            }else{
+                block();
+            }
+        }
+
+        @Override
+        public boolean done() {
+            return false;
+        }
+    }
+
+
+    private double calcDist (int xp, int yp, int xu, int yu){
+        return Math.sqrt((xp-xu)*(xp-xu)+(yp-yu)*(yp-yu));
+    }
+    private double[] getDistAll (int x){
+        return new double[] {45.45};
+    }
+
+
+
+    private List<Parking> getNearlyParkingsToCheckFreeSpace(int carX, int carY){
+        //TODO Michal możesz to zaimplementować (trzeba sprawdzić
+        // czy zmienna nie jest pusta
+        // jezeli nie jest pusta to na podstawie współrzenych samochodu
+        // i współrzednych parkingu znajdź najbliższe bez uwzględniania miejsca)
+        // jeżeli nie znalazłeś żadnych parkingów w pobliżu zwracasz pustą tablice
+        // jeżeli nic nie ma być aktualizowane zwracasz pustą tablicę
+
+        return new ArrayList<>();
+    }
+
+    private List<Parking> getNearlyParkingsToChooseByUser(int carX, int carY){
+        //TODO Michal możesz to zaimplementować (trzeba sprawdzić
+        // czy zmienna nie jest pusta
+        // jezeli nie jest pusta to na podstawie współrzenych samochodu
+        // i współrzednych parkingu znajdź najbliższe uwzględniając czy jest miejsce)
+        // jeżeli nie znalazłeś żadnych parkingów w pobliżu zwracasz pustą tablice
+
+        return new ArrayList<>();
+    }
+
 
 }

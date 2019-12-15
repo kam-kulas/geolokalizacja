@@ -53,7 +53,7 @@ public class ParkingTracker extends Agent {
 
     }
 
-    public boolean isFreeSpaceAvailable() {
+    private boolean isFreeSpaceAvailable() {
         if (freeSpaces == 0) {
             return false;
         }
@@ -66,7 +66,7 @@ public class ParkingTracker extends Agent {
 
 
 
-    public class AnswerPositionBehavior extends Behaviour{
+    private class AnswerPositionBehavior extends Behaviour{
 
         public void action(){
             MessageTemplate mt = MessageTemplate.and(
@@ -98,6 +98,42 @@ public class ParkingTracker extends Agent {
         }
         }
 
+    private class AnswerFreeSpaceBehavior extends Behaviour{
+
+        public void action(){
+            MessageTemplate mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.REQUEST),
+                    MessageTemplate.MatchContent("Podaj liczbe wolnych miejsc")
+            );
+            ACLMessage msg = myAgent.receive(mt);
+            if(msg!=null){
+                logger.LogReciveMessage(msg, myAgent);
+                try{
+                    ACLMessage answerMsg = msg.createReply();
+                    answerMsg.setPerformative(ACLMessage.INFORM);
+                    answerMsg.setLanguage("Polish");
+                    FreeSlotsPositionContent freeSlotsPositionContent =
+                            new FreeSlotsPositionContent(XP, YP);
+                    answerMsg.setContentObject((Serializable)freeSlotsPositionContent);
+                    send(answerMsg);
+                    logger.LogSendMessage(answerMsg, myAgent);
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
+            }else{
+                block();
+            }
+        }
+
+        public boolean done() {
+            return false;
+        }
     }
+
+    }
+
+
+
+
 
 
