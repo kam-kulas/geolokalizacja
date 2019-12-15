@@ -65,50 +65,22 @@ public class TaskManager extends Agent {
         DFAgentDescription dfad = new DFAgentDescription();
         dfad.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
-        sd.setType("FindFreeSlotsType");
-        sd.setName("FindFreeSlots");
+        sd.setType("TaskManager");
+        sd.setName(getLocalName());
         dfad.addServices(sd);
         try {
             DFService.register(this, dfad);
         }
         catch (FIPAException ex) {
-            System.out.println("Dupa :( (nie udalo sie zarejestrowac uslugi)");
+            ex.printStackTrace();
         }
 
-        DFAgentDescription template = new DFAgentDescription();
-        ServiceDescription sd1 = new ServiceDescription();
-        sd1.setType("GetCordsType");
-        template.addServices(sd1);
-        try {
-            DFAgentDescription[] result = DFService.search(this, template);
-            for (DFAgentDescription parking:result){
-                //TODO
 
-            }
-        }
-        catch (FIPAException ex) {
-            System.out.println("Dupa :( (nie ma uslugi)");
-        }
 
-        //----------------------------------------------------------------------------
-        //https://www.iro.umontreal.ca/~vaucher/Agents/Jade/primer4.html#1
-        AMSAgentDescription [] agents = null;
-        try {
-            SearchConstraints c = new SearchConstraints();
-            c.setMaxResults (new Long(-1));
-            agents = AMSService.search( this, new AMSAgentDescription (), c );
-        }
-        catch (Exception e) {
-            System.out.println( "Problem searching AMS: " + e );
-            e.printStackTrace();
-        }
-        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-        msg.setContent( "" );
 
-        for (int i=0; i<agents.length;i++)
-            msg.addReceiver( agents[i].getName() );
 
-        send(msg);
+
+
 
         addBehaviour(new CyclicBehaviour(this)
         {
@@ -121,6 +93,30 @@ public class TaskManager extends Agent {
                 block();
             }
         });
-        //----------------------------------------------------------------------------
     }
+
+    @Override
+    protected void takeDown(){
+        doDelete();
+    }
+
+
+    private void GetParkingPosition(){
+        //
+        DFAgentDescription template = new DFAgentDescription();
+        ServiceDescription sd1 = new ServiceDescription();
+        sd1.setType("Parking");
+        template.addServices(sd1);
+        try {
+            DFAgentDescription[] result = DFService.search(this, template);
+            for (DFAgentDescription parking:result){
+                //TODO
+
+            }
+        }
+        catch (FIPAException ex) {
+            System.out.println("Dupa :( (nie ma uslugi)");
+        }
+    }
+
 }
