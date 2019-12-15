@@ -14,12 +14,6 @@ public class Main {
                 p.setParameter(Profile.GUI, "true");
         ContainerController cc = rt.createMainContainer(p);
         AgentController ac;
-        try{
-            ac = cc.createNewAgent("TaskManager", "TaskManager", null);
-            ac.start();
-        }catch (StaleProxyException e){
-            e.printStackTrace();
-        }
         for (int i = 0; i<10; i++){
             try{
                 ac = cc.createNewAgent("ParkingTracker"+i, "ParkingTracker", null);
@@ -28,6 +22,14 @@ public class Main {
                 e.printStackTrace();
             }
         }
+
+        try{
+            ac = cc.createNewAgent("TaskManager", "TaskManager", null);
+            ac.start();
+        }catch (StaleProxyException e){
+            e.printStackTrace();
+        }
+
         for (int i = 0; i<1 ; i++){
             try{
                 ac = cc.createNewAgent("UserTracker"+i, "UserTracker", null);
