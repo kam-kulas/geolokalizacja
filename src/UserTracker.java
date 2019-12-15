@@ -50,7 +50,7 @@ public class UserTracker extends Agent {
     private void startGetParkings(){
         DFAgentDescription template  = new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
-        sd.setName("FindFreeSlots");
+        sd.setName("TaskManager");
         template.addServices(sd);
         try{
             Thread.sleep(3000);
