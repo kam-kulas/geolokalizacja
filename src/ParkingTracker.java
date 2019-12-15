@@ -1,5 +1,6 @@
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -42,7 +43,17 @@ public class ParkingTracker extends Agent {
             fe.printStackTrace();
         }
 
-
+        addBehaviour(new CyclicBehaviour(this)
+        {
+            public void action() {
+                ACLMessage msg= receive();
+                if (msg!=null)
+                    System.out.println( "== Answer" + " <- "
+                            +  msg.getContent() + " from "
+                            +  msg.getSender().getName() );
+                block();
+            }
+        });
 
 
 
