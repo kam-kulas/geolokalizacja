@@ -78,10 +78,6 @@ public class TaskManager extends Agent {
 
 
 
-
-
-
-
         addBehaviour(new CyclicBehaviour(this)
         {
             public void action() {
@@ -93,6 +89,9 @@ public class TaskManager extends Agent {
                 block();
             }
         });
+
+
+        GetParkingPosition();
     }
 
     @Override
@@ -102,20 +101,24 @@ public class TaskManager extends Agent {
 
 
     private void GetParkingPosition(){
-        //
+        // Dowiedz się jakie pozycje mają parkingi
         DFAgentDescription template = new DFAgentDescription();
-        ServiceDescription sd1 = new ServiceDescription();
-        sd1.setType("Parking");
-        template.addServices(sd1);
+        ServiceDescription sd = new ServiceDescription();
+        sd.setType("Parking");
+        template.addServices(sd);
         try {
             DFAgentDescription[] result = DFService.search(this, template);
-            for (DFAgentDescription parking:result){
-                //TODO
-
+            for (int i = 0; i < result.length; i++){
+                AID nameReciver = result[i].getName();
+                ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+                msg.addReceiver(nameReciver);
+                msg.setLanguage("Polish");
+                msg.setContent("Podaj pozycje");
+                send(msg);
             }
         }
         catch (FIPAException ex) {
-            System.out.println("Dupa :( (nie ma uslugi)");
+            ex.printStackTrace();
         }
     }
 
