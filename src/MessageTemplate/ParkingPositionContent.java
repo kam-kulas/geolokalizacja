@@ -1,11 +1,11 @@
-package messageTemplate;
+package MessageTemplate;
 import java.io.Serializable;
 
-public class FreeSlotsPositionContent implements Serializable{
+public class ParkingPositionContent implements Serializable{
     private int XP;
     private int YP;
 
-    public FreeSlotsPositionContent(int XP, int YP){
+    public ParkingPositionContent(int XP, int YP){
         this.XP = XP;
         this.YP = YP;
     }

@@ -1,13 +1,11 @@
 import Models.Parking;
 import Tools.Logger;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import jade.core.Agent;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.Math;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import jade.core.AID;
 
@@ -16,20 +14,22 @@ import jade.domain.FIPAAgentManagement.*;
 import jade.core.behaviours.*;
 import jade.domain.FIPAException;
 import jade.lang.acl.*;
-import messageTemplate.FindFreeSlotsContent;
-import messageTemplate.FreeSlotsPositionContent;
-import messageTemplate.ParkingsToChooseByUserContent;
+import MessageTemplate.FindFreeSlotsContent;
+import MessageTemplate.ParkingPositionContent;
+import MessageTemplate.ParkingsToChooseByUserContent;
 
 
 public class TaskManager extends Agent {
 
     private Logger logger;
-    List<Parking> parkings = new ArrayList<>();
+    private List<Parking> parkings = new ArrayList<>();
+    private Dictionary<String, UserSession> userSessions = new Hashtable<>();
+
 
     @Override
     protected void setup(){
 
-        System.out.println("Agent: "+getLocalName());
+        System.out.println("Agent: " + getLocalName());
         logger = new Logger();
 
         // Rejestracja agenta na DFD
@@ -95,11 +95,11 @@ public class TaskManager extends Agent {
                 Logger.LogReciveMessage(msg, myAgent);
                 try{
                     Serializable data = msg.getContentObject();
-                    FreeSlotsPositionContent freeSlotsPositionContent
-                            = (FreeSlotsPositionContent) data;
+                    ParkingPositionContent parkingPositionContent
+                            = (ParkingPositionContent) data;
                     Parking parking = new Parking(msg.getSender(),
-                            freeSlotsPositionContent.getXP(),
-                            freeSlotsPositionContent.getYP());
+                            parkingPositionContent.getXP(),
+                            parkingPositionContent.getYP());
                     parkings.add(parking);
                 }
                 catch (UnreadableException e){
@@ -119,37 +119,62 @@ public class TaskManager extends Agent {
 
     private class AnswerNearlyParkings extends Behaviour{
 
+        private ACLMessage msgFromUser = null;
+
         @Override
         public void action() {
             MessageTemplate mt =
                     MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
             ACLMessage msg = myAgent.receive(mt);
             if(msg!=null){
-                logger.LogReciveMessage(msg, myAgent);
+                msgFromUser = msg;
+                logger.LogReciveMessage(msgFromUser, myAgent);
                 try {
-                    Serializable data = msg.getContentObject();
+                    Serializable data = msgFromUser.getContentObject();
                     FindFreeSlotsContent findFreeSlotsContent
                             = (FindFreeSlotsContent) data;
                     int carX = findFreeSlotsContent.getPositionX();
                     int carY = findFreeSlotsContent.getPositionY();
 
-                    List<Parking> nearlyParkingsToCheckFreeSpace = getNearlyParkingsToCheckFreeSpace(carX, carY);
+                    UserSession userSession = new UserSession(msgFromUser.getSender(), msgFromUser.getConversationId());
+                    userSessions.put(msgFromUser.getConversationId(), userSession);
+
+
                     // Sprawdź zajętość miejsc
+                    List<Parking> nearlyParkingsToCheckFreeSpace = getNearlyParkingsToCheckFreeSpace(carX, carY);
                     if(!nearlyParkingsToCheckFreeSpace.isEmpty()){
-
-
+                        userSessions.get(msgFromUser.getConversationId())
+                                .setRequestAboutFreeSpaces(nearlyParkingsToCheckFreeSpace.size());
+                        ACLMessage requestAboutFreeSpace = new ACLMessage(ACLMessage.REQUEST);
+                        requestAboutFreeSpace.setLanguage("Polish");
+                        requestAboutFreeSpace.setContent("Podaj liczbe wolnych miejsc");
+                        for (Parking parking: nearlyParkingsToCheckFreeSpace){
+                            requestAboutFreeSpace.addReceiver(parking.getName());
+                        }
+                        send(requestAboutFreeSpace);
+                        logger.LogSendMessage(requestAboutFreeSpace, myAgent);
+                        userSessions.get(msgFromUser.getConversationId())
+                                .IsDoneAnswerNearlyParkings = true;
                         return;
                     }
-                    // Wszystkie dane są aktualne więc daj miejsca do wyboru
+
+
+                    // Wszystkie dane są aktualne więc daj miejsca do wyboru dla usera
                     List<Parking> nearlyParkingsToChooseByUser = getNearlyParkingsToChooseByUser(carX, carY);
                     if (!nearlyParkingsToChooseByUser.isEmpty()){
                         ParkingsToChooseByUserContent parkingsToChooseByUser =
                                 new ParkingsToChooseByUserContent(nearlyParkingsToChooseByUser);
                         try{
-                            ACLMessage answerMsg = msg.createReply();
+                            ACLMessage answerMsg = msgFromUser.createReply();
                             answerMsg.setPerformative(ACLMessage.INFORM);
                             answerMsg.setLanguage("Polish");
                             answerMsg.setContentObject(parkingsToChooseByUser);
+                            send(answerMsg);
+                            logger.LogSendMessage(answerMsg, myAgent);
+                            userSessions.get(msgFromUser.getConversationId())
+                                    .IsDoneAnswerNearlyParkings = true;
+                            userSessions.get(msgFromUser.getConversationId())
+                                    .IsDoneCheckFreeSpaces = true;
                         }catch (IOException ioe){
                             ioe.printStackTrace();
                         }
@@ -158,7 +183,12 @@ public class TaskManager extends Agent {
 
                     // Nie znaleziono żadnych pustych miejsc w pobliżu
                     else{
-
+                        ACLMessage answerMsg = msgFromUser.createReply();
+                        answerMsg.setPerformative(ACLMessage.INFORM);
+                        answerMsg.setLanguage("Polish");
+                        answerMsg.setContent("Brak wolnych miejsc parkingowych");
+                        send(answerMsg);
+                        logger.LogSendMessage(answerMsg, myAgent);
                     }
                 }
                 catch (UnreadableException ue){
@@ -172,7 +202,9 @@ public class TaskManager extends Agent {
 
         @Override
         public boolean done() {
-            return false;
+            if (msgFromUser == null)
+                return false;
+            return userSessions.get(msgFromUser.getConversationId()).IsDoneAnswerNearlyParkings;
         }
     }
 

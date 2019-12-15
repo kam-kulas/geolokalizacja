@@ -1,4 +1,4 @@
-package messageTemplate;
+package MessageTemplate;
 import java.io.Serializable;
 
 public class ReservationContent implements Serializable{

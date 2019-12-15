@@ -1,9 +1,8 @@
-package messageTemplate;
+package MessageTemplate;
 
 import Models.Parking;
 
 import java.io.Serializable;
-import java.util.Enumeration;
 import java.util.List;
 
 public class ParkingsToChooseByUserContent implements Serializable {
