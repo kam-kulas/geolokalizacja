@@ -7,7 +7,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import messageTemplate.FreeSlotsPositionContent;
+import MessageTemplate.ParkingPositionContent;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -49,6 +49,7 @@ public class ParkingTracker extends Agent {
 
         // Zachowania
         addBehaviour(new AnswerPositionBehavior());
+        addBehaviour(new AnswerFreeSpaceBehavior());
 
 
     }
@@ -80,9 +81,9 @@ public class ParkingTracker extends Agent {
                     ACLMessage answerMsg = msg.createReply();
                     answerMsg.setPerformative(ACLMessage.INFORM);
                     answerMsg.setLanguage("Polish");
-                    FreeSlotsPositionContent freeSlotsPositionContent =
-                            new FreeSlotsPositionContent(XP, YP);
-                    answerMsg.setContentObject((Serializable)freeSlotsPositionContent);
+                    ParkingPositionContent parkingPositionContent =
+                            new ParkingPositionContent(XP, YP);
+                    answerMsg.setContentObject((Serializable) parkingPositionContent);
                     send(answerMsg);
                     logger.LogSendMessage(answerMsg, myAgent);
                 }catch (IOException e){
@@ -108,18 +109,12 @@ public class ParkingTracker extends Agent {
             ACLMessage msg = myAgent.receive(mt);
             if(msg!=null){
                 logger.LogReciveMessage(msg, myAgent);
-                try{
-                    ACLMessage answerMsg = msg.createReply();
-                    answerMsg.setPerformative(ACLMessage.INFORM);
-                    answerMsg.setLanguage("Polish");
-                    FreeSlotsPositionContent freeSlotsPositionContent =
-                            new FreeSlotsPositionContent(XP, YP);
-                    answerMsg.setContentObject((Serializable)freeSlotsPositionContent);
-                    send(answerMsg);
-                    logger.LogSendMessage(answerMsg, myAgent);
-                }catch (IOException e){
-                    e.printStackTrace();
-                }
+                ACLMessage answerMsg = msg.createReply();
+                answerMsg.setPerformative(ACLMessage.INFORM);
+                answerMsg.setLanguage("Polish");
+                answerMsg.setContent(String.valueOf(freeSpaces));
+                send(answerMsg);
+                logger.LogSendMessage(answerMsg, myAgent);
             }else{
                 block();
             }
