@@ -2,9 +2,10 @@ package Models;
 
 import jade.core.AID;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class Parking{
+public class Parking implements Serializable {
     private AID name;
     private int x;
     private int y;

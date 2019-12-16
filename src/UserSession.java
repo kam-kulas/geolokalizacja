@@ -2,22 +2,26 @@ import jade.core.AID;
 
 public class UserSession {
 
-    public UserSession(AID customerId, String conversationId){
+    public UserSession(AID customerId, String conversationId, int posX, int posY){
         this.customerId = customerId;
         this.conversationId = conversationId;
+        this.posX = posX;
+        this.posY = posY;
 
         requestAboutFreeSpaces = 0;
         IsDoneCheckFreeSpaces = false;
     }
 
-    public AID customerId;
-    public String conversationId;
+    private AID customerId;
+    private String conversationId;
+    private int posX;
+    private int posY;
+
 
     private int requestAboutFreeSpaces;
-
-
-    //steps
     public boolean IsDoneCheckFreeSpaces;
+
+
 
     public void setRequestAboutFreeSpaces(int requestAboutFreeSpaces) {
         this.requestAboutFreeSpaces = requestAboutFreeSpaces;
@@ -27,5 +31,21 @@ public class UserSession {
         requestAboutFreeSpaces--;
         if(requestAboutFreeSpaces==0)
             IsDoneCheckFreeSpaces = true;
+    }
+
+    public AID getCustomerId() {
+        return customerId;
+    }
+
+    public int getPosX() {
+        return posX;
+    }
+
+    public int getPosY() {
+        return posY;
+    }
+
+    public String getConversationId() {
+        return conversationId;
     }
 }

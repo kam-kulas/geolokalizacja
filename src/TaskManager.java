@@ -1,6 +1,5 @@
 import Models.Parking;
 import Tools.Logger;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import jade.core.Agent;
 
 import java.io.IOException;
@@ -10,7 +9,6 @@ import java.util.*;
 import java.util.List;
 
 import jade.core.AID;
-import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.domain.DFService;
@@ -24,15 +22,12 @@ import MessageTemplate.ParkingsToChooseByUserContent;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.UnreadableException;
 
-import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.List;
 
 public class TaskManager extends Agent {
 
     private Logger logger;
-    private List<Parking> parkings = new ArrayList<>();
+    private Dictionary<AID, Parking> parkings = new Hashtable<>();
     private Dictionary<String, UserSession> userSessions = new Hashtable<>();
 
 
@@ -57,9 +52,10 @@ public class TaskManager extends Agent {
         }
 
         //Zachownania
-        addBehaviour(new ReciveParkingInformationBehaviour());
+        addBehaviour(new ReciveParkingPositionBehaviour());
+        addBehaviour(new ReciveParkingFreeSpaceBehaviour());
         addBehaviour(new GetParkingsPositionBehaviour());
-        addBehaviour(new AnswerNearlyParkings());
+        addBehaviour(new StartNearlyParkings());
 
     }
 
@@ -95,14 +91,16 @@ public class TaskManager extends Agent {
     }
 
 
-    private class ReciveParkingInformationBehaviour extends Behaviour{
+    private class ReciveParkingPositionBehaviour extends Behaviour{
 
         public void action(){
-            MessageTemplate mt =
-                    MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+            MessageTemplate mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchEncoding("ParkingPositionContent")
+            );
+
             ACLMessage msg = myAgent.receive(mt);
             if(msg!=null){
-                if(msg.getEncoding() == "ParkingPositionContent"){
                     Logger.LogReciveMessage(msg, myAgent);
                     try{
                         Serializable data = msg.getContentObject();
@@ -111,15 +109,11 @@ public class TaskManager extends Agent {
                         Parking parking = new Parking(msg.getSender(),
                                 parkingPositionContent.getXP(),
                                 parkingPositionContent.getYP());
-                        parkings.add(parking);
+                        parkings.put(parking.getName(), parking);
                     }
                     catch (UnreadableException e){
                         e.printStackTrace();
                     }
-                }
-                if (msg.getEncoding() == "FreeSpaces"){
-
-                }
             }
             else{
                 block();
@@ -132,7 +126,41 @@ public class TaskManager extends Agent {
     }
 
 
-    private class AnswerNearlyParkings extends Behaviour{
+    private class ReciveParkingFreeSpaceBehaviour extends Behaviour{
+
+        @Override
+        public void action() {
+            MessageTemplate mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchEncoding("FreeSpaces")
+            );
+
+            ACLMessage msg = myAgent.receive(mt);
+            if(msg!=null){
+                Logger.LogReciveMessage(msg, myAgent);
+                int freeSpace = Integer.parseInt(msg.getContent());
+                parkings.get(msg.getSender()).setFreeSpace(freeSpace);
+
+                if (userSessions.get(msg.getConversationId())!=null){
+                    userSessions.get(msg.getConversationId()).decrementRequestAboutFreeSpaces();
+                    if(userSessions.get(msg.getConversationId()).IsDoneCheckFreeSpaces){
+                        myAgent.addBehaviour(new AnswerNearlyParkings(userSessions.get(msg.getConversationId())));
+                    }
+                }
+            }
+            else{
+                block();
+            }
+        }
+
+        @Override
+        public boolean done() {
+            return false;
+        }
+    }
+
+
+    private class StartNearlyParkings extends Behaviour{
 
         private ACLMessage msgFromUser = null;
 
@@ -151,7 +179,11 @@ public class TaskManager extends Agent {
                     int carX = findFreeSlotsContent.getPositionX();
                     int carY = findFreeSlotsContent.getPositionY();
 
-                    UserSession userSession = new UserSession(msgFromUser.getSender(), msgFromUser.getConversationId());
+                    UserSession userSession = new UserSession(
+                            msgFromUser.getSender(),
+                            msgFromUser.getConversationId(),
+                            carX,
+                            carY);
                     userSessions.put(msgFromUser.getConversationId(), userSession);
 
 
@@ -163,6 +195,7 @@ public class TaskManager extends Agent {
                         ACLMessage requestAboutFreeSpace = new ACLMessage(ACLMessage.REQUEST);
                         requestAboutFreeSpace.setLanguage("Polish");
                         requestAboutFreeSpace.setContent("Podaj liczbe wolnych miejsc");
+                        requestAboutFreeSpace.setConversationId(msgFromUser.getConversationId());
                         for (Parking parking: nearlyParkingsToCheckFreeSpace){
                             requestAboutFreeSpace.addReceiver(parking.getName());
                         }
@@ -174,27 +207,23 @@ public class TaskManager extends Agent {
 
                     // Wszystkie dane są aktualne więc daj miejsca do wyboru dla usera
                     List<Parking> nearlyParkingsToChooseByUser = getNearlyParkingsToChooseByUser(carX, carY);
+                    ACLMessage answerMsg = msgFromUser.createReply();
+                    answerMsg.setPerformative(ACLMessage.INFORM);
+                    answerMsg.setLanguage("Polish");
+
                     if (!nearlyParkingsToChooseByUser.isEmpty()){
                         ParkingsToChooseByUserContent parkingsToChooseByUser =
                                 new ParkingsToChooseByUserContent(nearlyParkingsToChooseByUser);
                         try{
-                            ACLMessage answerMsg = msgFromUser.createReply();
-                            answerMsg.setPerformative(ACLMessage.INFORM);
-                            answerMsg.setLanguage("Polish");
                             answerMsg.setContentObject(parkingsToChooseByUser);
                             send(answerMsg);
                             logger.LogSendMessage(answerMsg, myAgent);
                         }catch (IOException ioe){
                             ioe.printStackTrace();
                         }
-
                     }
-
                     // Nie znaleziono żadnych pustych miejsc w pobliżu
                     else{
-                        ACLMessage answerMsg = msgFromUser.createReply();
-                        answerMsg.setPerformative(ACLMessage.INFORM);
-                        answerMsg.setLanguage("Polish");
                         answerMsg.setContent("Brak wolnych miejsc parkingowych");
                         send(answerMsg);
                         logger.LogSendMessage(answerMsg, myAgent);
@@ -215,6 +244,46 @@ public class TaskManager extends Agent {
         }
     }
 
+    private class AnswerNearlyParkings extends OneShotBehaviour{
+
+        private UserSession session;
+        public AnswerNearlyParkings(UserSession session){
+            this.session = session;
+        }
+
+        @Override
+        public void action() {
+            // Wszystkie dane są aktualne więc daj miejsca do wyboru dla usera
+            List<Parking> nearlyParkingsToChooseByUser =
+                    getNearlyParkingsToChooseByUser(session.getPosX(), session.getPosY());
+
+            ACLMessage answerMsg = new ACLMessage(ACLMessage.INFORM);
+            answerMsg.addReceiver(session.getCustomerId());
+            answerMsg.setConversationId(session.getConversationId());
+            answerMsg.setLanguage("Polish");
+
+            if (!nearlyParkingsToChooseByUser.isEmpty()){
+                ParkingsToChooseByUserContent parkingsToChooseByUser =
+                        new ParkingsToChooseByUserContent(nearlyParkingsToChooseByUser);
+                try{
+
+                    answerMsg.setContentObject(parkingsToChooseByUser);
+                    send(answerMsg);
+                    logger.LogSendMessage(answerMsg, myAgent);
+                }catch (IOException ioe){
+                    ioe.printStackTrace();
+                }
+            }
+            // Nie znaleziono żadnych pustych miejsc w pobliżu
+            else{
+                answerMsg.setContent("Brak wolnych miejsc parkingowych");
+                send(answerMsg);
+                logger.LogSendMessage(answerMsg, myAgent);
+            }
+            userSessions.remove(session.getConversationId());
+        }
+    }
+
 
     private double calcDist (int xp, int yp, int xu, int yu){
         return Math.sqrt((xp-xu)*(xp-xu)+(yp-yu)*(yp-yu));
@@ -226,7 +295,9 @@ public class TaskManager extends Agent {
         if (parkings == null) {
             return nearlyParkings;
         }
-            for (Parking parking : parkings) {
+        Enumeration enumerationParking = parkings.elements();
+            while (enumerationParking.hasMoreElements()) {
+                Parking parking = (Parking) enumerationParking.nextElement();
                 int xp = parking.getX();
                 int yp = parking.getY();
                 if (calcDist(xp, yp, carX, carY) <= radius) {

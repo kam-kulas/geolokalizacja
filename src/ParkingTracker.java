@@ -115,6 +115,7 @@ public class ParkingTracker extends Agent {
                 answerMsg.setPerformative(ACLMessage.INFORM);
                 answerMsg.setLanguage("Polish");
                 answerMsg.setEncoding("FreeSpaces");
+                answerMsg.setConversationId(msg.getConversationId());
                 answerMsg.setContent(String.valueOf(freeSpaces));
                 send(answerMsg);
                 logger.LogSendMessage(answerMsg, myAgent);
